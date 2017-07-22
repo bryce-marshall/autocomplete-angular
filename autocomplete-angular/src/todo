@@ -1,0 +1,7 @@
+* DoQuery method must return a Promise.
+* ?Scroll cursor item into view in long list
+
+* BUG: Sometimes the cancel icon renders in the wrong position following a scroll.
+* ?BUG: Clicking the cancel icon when autoAssign is true will result in the input control value being applied. NOT IN ANGULAR TEST IONIC
+* ?BUG: When autoAssign is true and a list item is clicked the input control value is used instead.
+* Consider allowing CSS configured favouring of "above" rendering of popup - may be better experience on mobile devices with virtual keyboards.

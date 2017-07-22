@@ -1,0 +1,27 @@
+body {
+    font-family: Arial, Helvetica, sans-serif;
+}
+h1 {
+    font-size: 16px;
+    text-align: center;
+}
+.autocomplete-popup {
+    --float-above: 1px !important;
+    --float-below: 1px !important;  
+    --trim-above: 15px !important;
+    --trim-below: 15px !important;
+}
+
+div.row {
+    padding-top: 15px;
+    padding-bottom: 15px;
+    border-bottom: solid royalblue 1px;
+}
+label {
+    font-size: smaller;
+}
+label[input]{
+    font-size: smaller;
+    font-weight: bold;
+    color: #3f3f3f;
+}

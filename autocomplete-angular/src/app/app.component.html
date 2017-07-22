@@ -1,0 +1,50 @@
+<ng-template autocomplete-styles></ng-template>
+<div id="header" style="padding-left:600px;padding-right:600px;">
+  <h1>
+    InputAutocomplete Demo (Angular)
+  </h1>
+</div>
+<div id="scroll-container" autocomp-container style="overflow:scroll;border: 1px solid #afafaf;padding:8px;padding-left:600px;padding-right:600px;width:100%;"
+  [style.height.px]="scrollHeight">
+  <div style="max-width:600px;">
+    <div style="height:800px;"></div>
+    <div class="row">
+      <label input>Colour</label>
+      <input id="input-element" type="text" [autocomp]="queryFn" [resolveFunction]="resolveFn" #col="autocomp" [typeKey]="typeKey"
+        [(dataItem)]="colour" [value]="col.controlValue" [allowCreate]="true" [openOnFocus]="openOnFocus" [autoAssign]="autoAssign"
+      />
+    </div>
+    <div class="row">
+      <label input>City</label>
+      <input type="text" [(dataItem)]="city" [value]="city" [autocomp]="queryCitiesFn" [allowCreate]="false" autoAssign="null"
+      />
+    </div>
+    <div class="row">
+      <label input>Currency</label>
+      <input type="text" [(dataItem)]="currency" [value]="currencyCode" [allowCreate]="false" autoAssign="on" [autocomp]="queryCurrenciesFn"
+        [textFunction]="formatCurrencyFn" [resolveFunction]="resolveCurrencyFunction" />
+    </div>
+    <div class="row"><button button (click)="onSetColour()">Set Colour Programatically</button></div>
+    <div class="row">
+      <input type="checkbox" [(ngModel)]="openOnFocus" />
+      <label>Open on Focus</label>
+    </div>
+    <div class="row">
+      <label>Auto-Assign</label>
+      <select [(ngModel)]="autoAssign">
+        <option value="" selected>Null (auto-assigns empty input values only)</option>
+        <option value="off">Off</option>
+        <option value="on">On</option>
+      </select>
+    </div>
+    <div class="row">
+      <input type="checkbox" [(ngModel)]="customCreate" />
+      <label>Custom Create Component</label>
+    </div>
+    <div class="row">
+      <input type="checkbox" [(ngModel)]="customList" />
+      <label>Custom List Component</label>
+    </div>
+    <div style="height:800px;"></div>
+  </div>
+</div>

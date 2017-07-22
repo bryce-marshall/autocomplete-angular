@@ -1,0 +1,12 @@
+<div class="autocomplete-wrapper">
+    <div #inputHost class="autocomplete-input">
+        <button *ngIf="!hasCustomCreate" class="autocomplete-button" (click)="onCreate()">{{input}}</button>
+        <ng-template *ngIf="hasCustomCreate" create-host></ng-template>
+    </div>
+    <div *ngIf="!hasCustomList" class="autocomplete-items">
+        <button *ngFor="let item of items; let i = index" class="autocomplete-button" [attr.autocomplete-cursor]="i == cursor ? true : null" (click)="onSelect(item)">{{getDisplayValue(item)}}</button>
+    </div>
+    <div *ngIf="hasCustomList" class="autocomplete-items">
+        <ng-template list-host></ng-template>
+    </div>
+</div>

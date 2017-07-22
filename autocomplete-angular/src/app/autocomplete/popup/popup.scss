@@ -1,0 +1,122 @@
+.autocomplete-popup
+ {
+    transform:scale(1);
+    z-index:10007;
+    background-color: #ffffff;
+    border: 1px solid #dedede;
+    // display: -webkit-flex;
+    // display: -ms-flexbox;
+    // display: flex;
+    // -webkit-flex-direction: column;
+    // -ms-flex-direction: column;
+    // flex-direction: column;
+    max-width:100%;
+    opacity: 1;
+    /* 
+    true|false - If true, automatically sets the min-width style property of the popup element to the explicit computed width of the bound active input element.
+    The default value is 'true'. 
+    */    
+    --auto-min-width: true;
+    /* 
+    The height that will be trimmed off the maximum available popup height when it is displayed in the upper position.
+    The popup height will not be trimmed below the specified compression limit.
+    */
+    --trim-above: 0px;
+    /* 
+    The height that will be trimmed off the maximum available popup height when it is displayed in the lower position.
+    The popup height will not be trimmed below the specified compression limit.
+    */
+    --trim-below: 0px;
+    /* The height that the popup will float above the input when displayed in the upper position  */
+    --float-above: 0px;
+    /* The height  that the popup will float below the input when displayed in the lower position  */
+    --float-below: 0px;
+    /* 
+    The lowest height that the popup will be compressed to before the lower position loses priority.
+    Note that --compression-limit will still be overridden when the available viewport area is too small to contain it,
+    unless --compression-limit-override is set to false. The default value is 50%.
+    */
+    --compression-limit: 50%;
+    /* 
+    true|false - Enables overriding of the compression limit when the available viewport area is so small that popup would otherwise be forced to extend beyond it */
+    --compression-limit-override: true;
+    /* 
+    The delay, in milliseconds, between the bound input element receiving focus and the popup opening. The default is 700 milliseconds.
+    This  can be useful to prevent initial popup jitter and resizing if the UI automatically scrolls the input element 
+    into an optimal viewport position upon it receiving focus.
+    */
+    --open-delay: 700;
+    /*
+    When specified, defines the duration (in milliseconds) of the minimum enforced delay between each processed scroll event in a sequence.
+    The default value  is 150 milliseconds).
+    */    
+    --scroll-throttle-duration: 150;
+    /*
+    The text to render in the cancel icon. The default value is 'X'.
+    */
+    --cancel-text: X;
+    /* 
+    true|false - If true, automatically sizes the cancel icon in both dimensions to correspond with the height of the active input element
+    The default value is 'true'. 
+    */
+    --auto-size-cancel: true;
+    /* 
+    The delay, in milliseconds, between the last input element keyup event in any given sequence and the cancel icon appearing. The default is 1000 milliseconds.
+    */
+    --cancel-delay: 1000;    
+}
+
+.autocomplete-wrapper .autocomplete-button {
+    text-transform: none;
+    display: block;
+    padding: 8px 12px;
+    text-align: center;
+    text-decoration: none;
+    background-color: inherit;
+    font-size: larger;
+    width: 100%;
+    border: 0px;
+}
+
+.autocomplete-items .autocomplete-button {
+    color: royalblue;
+    text-align: start;
+}
+
+.autocomplete-items .autocomplete-button[autocomplete-cursor] {
+    background-color: #e5e5e5;
+}
+
+.autocomplete-input
+{
+    border-bottom: 1px solid #dedede;
+}
+
+.autocomplete-items
+{
+    position: relative;
+    overflow: auto;
+}
+
+/* Material Design Styles */
+.md .autocomplete-popup {
+    min-width: 90%;
+    --trim-below: 24px;
+    --float-above: 20px;
+    --float-below: 14px;
+}
+
+.md .autocomplete-popup {
+    background-color: #fafafa;
+}
+
+.md .autocomplete-wrapper
+ {
+    border-radius: 2px;
+    box-shadow: 0 16px 20px rgba(0, 0, 0, 0.4);
+    max-height:inherit;
+ }
+
+/* iOS Styles */
+
+/* Windows Platform styles */
