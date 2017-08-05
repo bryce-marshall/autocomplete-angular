@@ -10,6 +10,7 @@ import { ExceptionFactory } from '@brycemarshall/exception';
 import { EventThrottle } from '@brycemarshall/event-throttle';
 import { ScrollListener, ScrollListenerEventArgs, ScrollEventTargetCollection, DOMType } from '@brycemarshall/scroll-listener';
 import { DefaultScrollSourceFilterProvider, ScrollSourceFilterProvider } from './scroll-source-filter';
+import { AutocompleteQueryMediator, AutocompleteQueryProcessor, BindQueryProcessorFunction, InputChangedFunction } from './autocomplete-query-mediator';
 
 /**
  * Defines a set of values representing the possible auto-assign modes of an Autocomplete component.
@@ -31,14 +32,6 @@ export enum AutoAssignMode {
    */
   On = 2
 }
-
-/**
- * A reference to the function to be used by Autocomplete instances to resolve auto-complete suggestions.
- * @function AutocompleteQueryFunction
- * @param {string} filter The filter to use when creating the suggestion list.
- * @returns A list of auto-complete suggestion items.
- */
-export type AutocompleteQueryFunction = (filter: string) => any[];
 
 /**
  * The structure passed to AutocompleteResolveFunction implementations.
@@ -99,10 +92,15 @@ class CoordinatorImp extends AutocompleteCoordinator {
   /** @internal */
   private _viewportManager: ViewportManager;
   /** @internal */
-  private _src: InputRef;
-  //private _src: Autocomplete;
+  private _controller: AutocompleteController;
   /** @internal */
-  private _inputElement: HTMLInputElement;
+  private _mouseHandler: MouseEventHandler;
+  /** @internal */
+  private _src: InputRef = null;
+  /** @internal */
+  private _query: QueryProxy = null;
+  /** @internal */
+  private _inputElement: HTMLInputElement = null;
   /** @internal */
   private _initialInputValue: string = "";
   /** @internal */
@@ -111,10 +109,6 @@ class CoordinatorImp extends AutocompleteCoordinator {
   private _precursorInput: string = "";
   /** @internal */
   private _queryInput: string = null;
-  /** @internal */
-  private _controller: AutocompleteController;
-  /** @internal */
-  private _mouseHandler: MouseEventHandler;
   /** @internal */
   private _blurState: BlurHandlerState = BlurHandlerState.Inactive;
 
@@ -206,15 +200,17 @@ class CoordinatorImp extends AutocompleteCoordinator {
     // If so, check apply any changes to the previous item IF autoAssign is enabled.
     if (this._src != null) {
       this.processAutoAssign();
+      this.destroy();
     }
 
     this._src = src;
     this._inputElement = inputElement;
     this._initialInputValue = this._src.getDisplayText(this._src.dataItem, false);
     this._inputValue = this._initialInputValue;
-    this._viewportManager.destroyPopup(); // Safe to invoke even if there is no existing popup instance 
-    this._viewportManager.createPopup(src, this.doQuery());
+    this._viewportManager.createPopup(src);
     this._blurState = BlurHandlerState.Active;
+    if (src.openOnFocus)
+      this.initQuery();
   }
 
   handleLostFocus(src: InputRef) {
@@ -228,7 +224,7 @@ class CoordinatorImp extends AutocompleteCoordinator {
     if (src !== this._src) return;
 
     this._inputValue = value != null ? value : "";
-    this._viewportManager.updatePopup(this.doQuery());
+    this.initQuery();
   }
 
   handleKeyUp(src: InputRef, event: KeyboardEvent) {
@@ -278,12 +274,12 @@ class CoordinatorImp extends AutocompleteCoordinator {
     if (this._viewportManager.cursorActive) return;
     this._precursorInput = this._inputValue;
     if (this._queryInput != this._inputValue)
-      this._viewportManager.updatePopup(this.doQuery());
+      this.initQuery();
   }
 
   private ensurePopup() {
     if (this._queryInput != this._inputValue)
-      this._viewportManager.updatePopup(this.doQuery());
+      this.initQuery();
     else
       this._viewportManager.isActive = true;
   }
@@ -324,14 +320,90 @@ class CoordinatorImp extends AutocompleteCoordinator {
     this._inputValue = "";
     this._precursorInput = "";
     this._queryInput = null;
-    this._viewportManager.destroyPopup();
+    this._viewportManager.destroyPopup(); // Safe to invoke even if there is no existing popup instance
+    if (this._query != null) {
+      this._query.destroy();
+      this._query = null;
+    }
   }
 
-  /** @internal */
-  private doQuery(): any[] {
-    if (this._src.queryFunction == null) return null;
-    this._queryInput = this.inputValue;
-    return this._src.queryFunction(this.inputValue);
+  private initQuery(): void {
+    if (this._query == null) {
+      this._query = CoordinatorImp.createQueryProxy(this);
+    }
+
+    this._query.onInputChanged();
+  }
+
+  private handleQueryResponse(src: InputRef, data: any[]) {
+    if (src !== this._src) return;
+    this._viewportManager.updatePopup(data);
+  }
+
+  private static createQueryProxy(c: CoordinatorImp): QueryProxy {
+    const destroyedMsg = "AutocompleteQueryMediator destroyed.";
+    const subscribedMsg = "The AutocompleteQueryMediator already has a subscriber.";
+    const notSubscribedMsg = "No query processor for the target input control has subscribed to the AutocompleteQueryMediator.";
+
+    let src: InputRef = c._src;
+    let p: AutocompleteQueryProcessor = null;
+    let context: any = {};
+    let activeSequence: number = 0;
+    let sequence: number = 0;
+
+    let m: AutocompleteQueryMediator = {
+      get isDestroyed() { return c == null; },
+
+      subscribeFn(inputChangedFn: InputChangedFunction, destroyFn?: Function) {
+        if (c == null) throw ExceptionFactory.InvalidOperation(destroyedMsg);
+        if (p != null) throw ExceptionFactory.InvalidOperation(subscribedMsg);
+        p = new QueryProcProxy(inputChangedFn, destroyFn);
+      },
+
+      subscribeProc(processor: AutocompleteQueryProcessor) {
+        if (c == null) throw ExceptionFactory.InvalidOperation(destroyedMsg);
+        if (p != null) throw ExceptionFactory.InvalidOperation(subscribedMsg);
+        p = processor;
+      },
+
+      onResult(token: any, data: any[]) {
+        if (c == null) return; // Out of scope/destroyed
+        if ((<QueryToken>token).context !== context || typeof ((<QueryToken>token).sequence) != "number") return;
+        if ((<QueryToken>token).sequence <= activeSequence) return;
+        activeSequence = token.sequence;
+        c.handleQueryResponse(src, data);
+      }
+    };
+
+    src.queryFunction(m);
+
+    return {
+      get mediator(): AutocompleteQueryMediator {
+        return m;
+      },
+      get processor(): AutocompleteQueryProcessor {
+        if (p == null) throw ExceptionFactory.InvalidOperation(notSubscribedMsg);
+        return p;
+      },
+      onInputChanged() {
+        if (p == null) throw ExceptionFactory.InvalidOperation(notSubscribedMsg);
+        p.onInputChanged(m,
+          ClosureFactory.createQueryToken(context, ++sequence),
+          c._inputValue);
+      },
+      destroy() {
+        src = null;
+        m = null;
+        c = null;
+        context = null;
+        try {
+          p.onDestroy();
+        }
+        finally {
+          p == null;
+        }
+      }
+    };
   }
 
   /** @internal */
@@ -340,8 +412,6 @@ class CoordinatorImp extends AutocompleteCoordinator {
       this.assignFromInput();
     } else if (this.hasChanges)
       this.controller.cancelEdit();
-
-    // this._src.detectChanges();
   }
 
   /** @internal */
@@ -392,7 +462,7 @@ class CoordinatorImp extends AutocompleteCoordinator {
     if (this._queryInput != value) {
       this._queryInput = null;
       this._viewportManager.updatePopup(null);
-    }    
+    }
   }
 
   /** @internal */
@@ -511,7 +581,7 @@ export abstract class AutocompleteBase {
    * @property {AutocompleteQueryFunction} queryFunction
    */
   @Input('autocomp')
-  queryFunction: AutocompleteQueryFunction;
+  queryFunction: BindQueryProcessorFunction;
   /**
    * A reference to a AutocompleteTextFunction that can be used by Autocomplete instances to resolve the display text for data item instances. If not assigned, then the Autocomplete instance will use each data item instance's toString() function.
    * @property {AutocompleteTextFunction} textFunction
@@ -558,7 +628,7 @@ export abstract class AutocompleteBase {
       get allowCursor(): boolean { return that.allowCursor; },
       get openOnFocus(): boolean { return that.openOnFocus },
       get typeKey(): string { return that.typeKey; },
-      get queryFunction(): AutocompleteQueryFunction { return that.queryFunction; },
+      get queryFunction(): BindQueryProcessorFunction { return that.queryFunction; },
       get textFunction(): AutocompleteTextFunction { return that.textFunction; },
       get resolveFunction(): AutocompleteResolveFunction { return that.resolveFunction; },
       get hostElement(): HTMLElement { return inputEl.nativeElement; },
@@ -717,25 +787,52 @@ export class Autocomplete extends AutocompleteBase {
 }
 
 /** @internal */
+interface QueryProxy {
+  readonly mediator: AutocompleteQueryMediator;
+  readonly processor: AutocompleteQueryProcessor;
+  onInputChanged();
+  destroy();
+}
+
+/** @internal */
+
+class QueryProcProxy implements AutocompleteQueryProcessor {
+  constructor(private inputChangedFn: InputChangedFunction, private destroyFn: Function) {
+  }
+
+  onInputChanged(sender: AutocompleteQueryMediator, token: any, filter: string) {
+    this.inputChangedFn(sender, token, filter);
+  }
+  onDestroy() {
+    if (this.destroyFn)
+      this.destroyFn();
+  }
+}
+
+/** @internal */
 interface InputRef {
   readonly allowCreate: boolean;
   readonly autoAssign: AutoAssignMode;
   readonly allowCursor: boolean;
   readonly openOnFocus: boolean;
   readonly typeKey: string;
-  readonly queryFunction: AutocompleteQueryFunction;
+  readonly queryFunction: BindQueryProcessorFunction;
   readonly textFunction: AutocompleteTextFunction;
   readonly resolveFunction: AutocompleteResolveFunction;
   readonly hostElement: HTMLElement;
-  //readonly typeProvider: AutocompleteTypeProvider;
   dataItem: any;
   getTypeset(): AutocompleteTypeset;
-  // detectChanges();
   getDisplayText(dataItem: any, descriptive: boolean): string;
   setControlValue(value: string): void;
   addEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void;
   removeEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void;
   onAfterDestroyPopup();
+}
+
+/** @internal */
+interface QueryToken {
+  readonly context: any;
+  readonly sequence: number;
 }
 
 /** @internal */
@@ -763,6 +860,7 @@ class ViewportManager {
   private _autoMinWidth: boolean;
   private _autoSizeCancel: boolean;
   private _cancelText: string;
+  private _delaying: boolean = false;
   private _active: boolean = false;
   private _concealed: boolean = false;
   private _cancelVisible: boolean = false;
@@ -818,7 +916,7 @@ class ViewportManager {
     return this._popupComp.instance.getCreateData();
   }
 
-  public createPopup(src: InputRef, items: any[]) {
+  public createPopup(src: InputRef) {
     if (this._popupComp != null) throw ExceptionFactory.InvalidOperation("An existing popup instance is already created.");
     this._src = src;
 
@@ -857,13 +955,14 @@ class ViewportManager {
 
     let openDelay = style.getNumber("--open-delay", 700, 0);
     if (openDelay == 0) {
-      this.updatePopup(items);
       this.setCancelVisibility(true);
     }
     else {
+      this._delaying = true;
       setTimeout((src) => {
         if (this._src == src) {
-          this.updatePopup(items);
+          this._delaying = false;
+          this.updatePopup(this._items);
           this.setCancelVisibility(true);
         }
       }, openDelay, src);
@@ -883,6 +982,7 @@ class ViewportManager {
     this._cursor = -1;
     this._popup = null;
     this._cancelIcon = null;
+    this._delaying = false;
     this._active = false;
     this._concealed = false;
     this._cancelVisible = false;
@@ -907,10 +1007,12 @@ class ViewportManager {
 
   updatePopup(items: any[]) {
     this._items = items;
+    if (this._delaying) return; // Await the open-delay timer
     this._cursor = -1;
     let val = this._coordinator.inputValue;
     this.isActive = (items && items.length > 0) || val.length > 0 && this._coordinator.hasChanges;
     if (!this.isActive) return;
+
 
     let comp = this.popupComp.instance;
     comp.showInput = this.computeShowInput();
@@ -1003,7 +1105,6 @@ class ViewportManager {
 
   private refresh() {
     if (this._popup == null || window == null) return;
-    //let pos = new InputPositionHelper(this._coordinator.inputElement);
     let r = this._coordinator.inputElement.getBoundingClientRect();
 
     if (this._autoMinWidth)
@@ -1035,8 +1136,8 @@ class ViewportManager {
       this._popup.style.top = "0px";
       popupRect = this._popup.getBoundingClientRect();
       // ... it is then repositioned to float above the input element
-      //this._popup.style.top = (pos.targetTop - popupRect.bottom - this._floatAbove) + "px";
-      this._popup.style.top = (r.top - popupRect.height + window.scrollY - this._floatAbove) + "px";
+      this._popup.style.top = (r.top - popupRect.height - this._floatAbove) + "px";
+      // this._popup.style.top = (r.top - popupRect.height + window.scrollY - this._floatAbove) + "px";
     }
 
     // Horizontal Alignment (includes support for ltr/rtl languages)
@@ -1044,6 +1145,12 @@ class ViewportManager {
       if (this._isLtrText) {
         if (popupRect.width / window.innerWidth > 0.8) {
           this.alignCentreWindow(popupRect);
+        }
+        else if (r.left < 0) {
+          this.alignLeftViewport();
+        }
+        else if (r.right > window.innerWidth) {
+          this.alignRightViewport(popupRect);
         }
         else if (popupRect.width + r.left < window.innerWidth) {
           this.alignLeftInput(r);
@@ -1058,6 +1165,15 @@ class ViewportManager {
       else {
         if (popupRect.width / window.innerWidth > 0.8) {
           this.alignCentreWindow(popupRect);
+        }
+        else if (r.left < 0) {
+          this.alignLeftViewport();
+        }
+        else if (r.right > window.innerWidth) {
+          this.alignRightViewport(popupRect);
+        }
+        else if (r.right > window.innerWidth) {
+          this.alignRightViewport(popupRect);
         }
         else if (r.right - popupRect.width > 0) {
           this.alignRightInput(r, popupRect);
@@ -1287,5 +1403,14 @@ class TextDirectionHelper {
     let style = window.getComputedStyle(element);
 
     return style != null && style.direction == "rtl" ? "rtl" : "ltr";
+  }
+}
+
+class ClosureFactory {
+  static createQueryToken(context: any, sequence: number): QueryToken {
+    return {
+      get context(): any { return context; },
+      get sequence(): number { return sequence; }
+    }
   }
 }

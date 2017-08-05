@@ -4,15 +4,19 @@ import { FormsModule } from '@angular/forms';
 import { HttpModule } from '@angular/http';
 
 import { AppComponent } from './app.component';
+import { AppComponentCities } from './app.component-cities';
+import { AppComponentColours } from './app.component-colours';
+import { AppComponentCustom } from './app.component-custom';
 import { TestCompModule } from './test-comp/test-comp.module';
 import { AutocompleteModule } from './autocomplete/autocomplete.module';
 import { CustomAutocompleteModule } from './custom-autocomplete/custom-autocomplete.module';
-import { AutocompleteStyles } from './autocomplete/index';
 
 @NgModule({
   declarations: [
     AppComponent,
-    AutocompleteStyles
+    AppComponentCities,
+    AppComponentColours,
+    AppComponentCustom
   ],
   imports: [
     BrowserModule,
@@ -24,5 +28,8 @@ import { AutocompleteStyles } from './autocomplete/index';
   ],
   providers: [],
   bootstrap: [AppComponent]
+  //bootstrap: [AppComponentCities]
+  //bootstrap: [AppComponentColours]
+  // bootstrap: [AppComponentCustom]
 })
 export class AppModule { }

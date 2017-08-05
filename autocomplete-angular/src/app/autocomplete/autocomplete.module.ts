@@ -5,8 +5,12 @@ import { Autocomplete, AutocompleteContainer } from './autocomplete';
 import { AutocompletePopup, CreateDirective, ListDirective } from './popup/popup';
 import { CancelIcon } from './cancel-icon/cancel-icon';
 
+/**
+ * The module for the Angular Autocomplete input directive and associated components.
+ */
 @NgModule({
   declarations: [
+    AutocompleteStyles,
     Autocomplete,
     AutocompleteContainer,
     AutocompletePopup, 
@@ -19,7 +23,7 @@ import { CancelIcon } from './cancel-icon/cancel-icon';
     CommonModule,
   ],
   exports: [
-    AutocompleteContainer, Autocomplete
+    AutocompleteStyles, AutocompleteContainer, Autocomplete
   ]
 })
 export class AutocompleteModule { }

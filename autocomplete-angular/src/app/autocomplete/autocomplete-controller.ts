@@ -1,5 +1,5 @@
 /**
- * A class that exposes AutocompleteInput functionality to custom AutocompleteInput sub-components.
+ * A class that exposes Autocomplete functionality to custom Autocomplete sub-components.
  * @class AutocompleteController
  */
 export abstract class AutocompleteController {

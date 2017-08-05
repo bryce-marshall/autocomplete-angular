@@ -1,11 +1,11 @@
 /**
-* Implemented by custom AutocompleteInput create components.
+* Implemented by custom Autocomplete create components.
 * @interface AutocompleteCreateComponent
 * @property {string} input - The current input value as entered into the associated DOM input element.
 */
 export interface AutocompleteCreateComponent {
     /**
-     * The current input data (set by the Autocomplete framework).
+     * The current input data (set by the auto-complete framework).
      */
     input: string;
     /**
@@ -14,7 +14,7 @@ export interface AutocompleteCreateComponent {
      * 
      * Remarks:
      * 
-     * As auto-assignment occurs implictly when the autocomplete input control loses focus, and the task of resolving the actual object to be assigned 
+     * As auto-assignment occurs implictly when the auto-complete input control loses focus, and the task of resolving the actual object to be assigned 
      * is delegated to an external autocomplete resolve function, the framework cannot determine whether the event will result in
      * the assignment of an existing object, the creation of a new one, or even if an assignment will occur at all.
      * For these reasons, the framework must assume that the auto-assignment MAY result in the creation of a new data entity and therefore 

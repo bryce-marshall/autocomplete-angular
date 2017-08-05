@@ -1,15 +1,16 @@
 body {
     font-family: Arial, Helvetica, sans-serif;
+    color: #3f3f3f;
 }
-h1 {
+h1 {    
     font-size: 16px;
     text-align: center;
 }
 .autocomplete-popup {
-    --float-above: 1px !important;
-    --float-below: 1px !important;  
-    --trim-above: 15px !important;
-    --trim-below: 15px !important;
+    --float-above: 1px;
+    --float-below: 1px;  
+    --trim-above: 15px;
+    --trim-below: 15px;
 }
 
 div.row {
@@ -23,5 +24,4 @@ label {
 label[input]{
     font-size: smaller;
     font-weight: bold;
-    color: #3f3f3f;
 }

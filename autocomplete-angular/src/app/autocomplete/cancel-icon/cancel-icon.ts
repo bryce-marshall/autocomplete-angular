@@ -5,10 +5,7 @@ import { MouseEventHandler } from '../mouse-event-handler';
 @Component({
     selector: 'cancel-icon',
     template: '<button (click)="cancel()">{{text}}</button>',
-    // templateUrl: 'cancel-icon.html',
     encapsulation: ViewEncapsulation.None,
-    // styleUrls: ['./cancel-icon.scss'],
-    // styles: ['.cancel-icon { transform:scale(1); z-index:10008; width: 25px; height: 25px; } .cancel-icon button { background-color: royalblue; opacity: 0.5; color: white; font-family: Verdana, Geneva, Tahoma, sans-serif; font-size: 12px; width: inherit; height: inherit; text-align: center; border: none; }'],
     host: {
         class: "cancel-icon",
         style: "position:fixed;"

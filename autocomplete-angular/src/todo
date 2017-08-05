@@ -1,7 +1,7 @@
-* DoQuery method must return a Promise.
+* TODO: Use an EventThrottle to throttle input changes and thus reduce the load on the query processor / minimise redundant queries that will never be used.
+* TODO: When canCreate is true immediately display the create sub-component of the popup and update the suggestion list only after the results have been returned.
 * ?Scroll cursor item into view in long list
+* Consider allowing CSS configured favouring of "above" rendering of popup - may be better experience on mobile devices with virtual keyboards.
 
 * BUG: Sometimes the cancel icon renders in the wrong position following a scroll.
 * ?BUG: Clicking the cancel icon when autoAssign is true will result in the input control value being applied. NOT IN ANGULAR TEST IONIC
-* ?BUG: When autoAssign is true and a list item is clicked the input control value is used instead.
-* Consider allowing CSS configured favouring of "above" rendering of popup - may be better experience on mobile devices with virtual keyboards.

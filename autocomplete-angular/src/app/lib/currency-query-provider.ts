@@ -1,105 +1,20 @@
-export class Colour {
-    private _name: string;
-    private _rgb: string;
+import { QueryFilters } from './query-filters';
 
-    constructor(name: string, rgb: string) {
-        this._name = name;
-        this._rgb = rgb;
-    }
-
-    get name(): string {
-        return this._name;
-    }
-
-    get rgb(): string {
-        return this._rgb;
-    }
-
-    toString() {
-        return this._name;
-    }
-}
-
-export class QueryProvider {
-    public static queryShapesFn(): Function {
-        return (filter: string): string[] => {
-            return QueryProvider.queryShapes(filter);
-        };
-    }
-
-    public static queryShapes(filter: string): string[] {
-        return QueryProvider.stringFilter(filter, QueryProvider.shapes);
-    }
-
-    public static queryColoursFn(): Function {
-        return (filter: string): Colour[] => {
-            return QueryProvider.queryColours(filter);
-        };
-    }
-
-    public static queryColours(filter: string, colours?: Colour[]): Colour[] {
-        if (colours == null)
-            colours = QueryProvider.colours;
-
-        return QueryProvider.genericFilter((filter: string, item: Colour, exact: boolean): boolean => {
-            if (item == null) return false;
-            if (exact)
-                return item.name == filter || item.name.toLowerCase() == filter;
-            return item.name.toLowerCase().indexOf(filter) > -1 || item.name.toLowerCase().indexOf(filter) > -1;
-        }, filter, colours);
-    }
-
-    public static queryCitiesFn(): Function {
-        return (filter: string): string[] => {
-            return QueryProvider.queryCities(filter);
-        };
-    }
-
-    public static queryCities(filter: string): string[] {
-        return QueryProvider.stringFilter(filter, QueryProvider.cities);
-    }
+export class CurrencyQueryProvider {
 
     public static queryCurrenciesFn(): Function {
         return (filter: string): any[] => {
-            return QueryProvider.queryCurrencies(filter);
+            return CurrencyQueryProvider.queryCurrencies(filter);
         };
     }
 
     public static queryCurrencies(filter: string): any[] {
-        return QueryProvider.genericFilter((filter: string, item: any, exact: boolean): boolean => {
+        return QueryFilters.genericFilter((filter: string, item: any, exact: boolean): boolean => {
             if (item == null) return false;
             if (exact)
                 return item.code.toLowerCase() == filter || item.name == filter;
             return item.code.toLowerCase().indexOf(filter) > -1 || item.name.toLowerCase().indexOf(filter) > -1;
-        }, filter, QueryProvider.currencies);
-    }
-
-    private static stringFilter(filter: string, items: string[]) {
-        return QueryProvider.genericFilter((filter: string, item: any, exact: boolean): boolean => {
-            if (item == null) return false;
-            return exact ? item.toLowerCase() == filter : item.toLowerCase().indexOf(filter) > -1;
-        }, filter, items);
-    }
-
-    private static genericFilter(filterFunction: Function, filter: string, items: any[]) {
-        if (filter == null || filter.length == 0) return items;
-        filter = filter.toLowerCase();
-
-        let result = items;
-
-        // if the value is an empty string don't filter the items
-        if (filter && filter.trim() != '') {
-            result = [];
-            for (let item of items) {
-                if (filterFunction(filter, item, false))
-                    result.push(item);
-            }
-
-            // if (result.length == 1 && filterFunction(filter, result[0], true))
-            //     result = null;
-        }
-
-        return result;
+        }, filter, CurrencyQueryProvider.currencies);
     }
 
     private static get currencies(): any[] {
@@ -113,80 +28,5 @@ export class QueryProvider {
         }
 
         return result;
-    }
-
-    private static get colours(): Colour[] {
-        return [
-            new Colour('Black', "#000000"),
-            new Colour('Blue', "#0000FF"),
-            new Colour('Green', "#008000"),
-            new Colour('Grey', "#808080"),
-            new Colour('Orange', "#FFA500"),
-            new Colour('Pink', "#FFC0CB"),
-            new Colour('Purple', "#800080"),
-            new Colour('Red', "#FF0000"),
-            new Colour('White', "#FFFFFF"),
-            new Colour('Yellow', "#FFFF00")
-        ];
-    }
-
-    private static get shapes(): string[] {
-        return [
-            'Circle',
-            'Elipse',
-            'Octagon',
-            'Pentagon',
-            'Rectangle',
-            'Rhombus',
-            'Square',
-            'Trapezoid',
-            'Triangle',
-        ];
-    }
-
-    private static get cities(): string[] {
-        return [
-            'Amsterdam',
-            'Auckland',
-            'Bogota',
-            'Buenos Aires',
-            'Cairo',
-            'Canberra',
-            'Dhaka',
-            'Edinburgh',
-            'Geneva',
-            'Genoa',
-            'Glasglow',
-            'Hanoi',
-            'Hong Kong',
-            'Islamabad',
-            'Istanbul',
-            'Jakarta',
-            'Kiel',
-            'Kyoto',
-            'Le Havre',
-            'Lebanon',
-            'Lhasa',
-            'Lima',
-            'London',
-            'Los Angeles',
-            'Madrid',
-            'Manila',
-            'New York',
-            'Olympia',
-            'Oslo',
-            'Panama City',
-            'Peking',
-            'Philadelphia',
-            'San Francisco',
-            'Seoul',
-            'Sydney',
-            'Taipeh',
-            'Tel Aviv',
-            'Tokio',
-            'Uelzen',
-            'Washington',
-            'Wellington'
-        ];
     }
 }

@@ -1,13 +1,12 @@
 import { AutocompleteResolveData, AutocompleteResolveFunction, AutocompleteTypeProvider, AutocompleteTypeset } from '../autocomplete/index';
-import { Colour, QueryProvider } from './query-provider';
-export { Colour } from './query-provider';
+import { Colour, ColourQueryProvider } from './colour-query-provider';
 
 export class ColourManager {
     private _colour: Colour = null;
     private _colours: Colour[];
 
-    constructor(){
-        this._colours = QueryProvider.queryColours("");
+    constructor() {
+        this._colours = ColourQueryProvider.queryColours("");
         this.sortColours();
     }
 
@@ -21,7 +20,7 @@ export class ColourManager {
 
     get queryColoursFn() {
         return (filter: string) => {
-            return QueryProvider.queryColours(filter, this._colours);
+            return ColourQueryProvider.queryColours(filter, this._colours);
         }
     }
 
@@ -34,7 +33,7 @@ export class ColourManager {
                 break;
             }
 
-            if (data.resolvedValue == null) {
+            if (data.resolvedValue == null && data.shouldCreate) {
                 let rgb: number = data.data;
                 if (rgb == null || isNaN(rgb))
                     rgb = Math.floor(Math.random() * 16777215);

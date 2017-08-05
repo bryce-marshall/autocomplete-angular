@@ -1,8 +1,11 @@
-import { Component, ChangeDetectorRef, ViewEncapsulation } from '@angular/core';
-import { AutocompleteResolveData, AutocompleteResolveFunction, AutocompleteTypeProvider, AutocompleteTypeset } from './autocomplete/index';
+import { Component, ViewEncapsulation } from '@angular/core';
+import { AutocompleteResolveData, AutocompleteResolveFunction, AutocompleteTypeProvider, AutocompleteTypeset, AutocompleteQueryMediator } from './autocomplete/index';
 import { CustomCreate, CustomList } from './custom-autocomplete/custom-autocomplete.module';
-import { Colour, ColourManager } from './lib/colour-manager';
-import { QueryProvider } from './lib/query-provider';
+import { ColourManager } from './lib/colour-manager';
+import { Colour, ColourQueryProvider } from './lib/colour-query-provider';
+import { CityQueryProvider } from './lib/city-query-provider';
+import { CurrencyQueryProvider } from './lib/currency-query-provider';
+import { stringFormat } from '@brycemarshall/string-format';
 
 @Component({
   selector: 'app-root',
@@ -12,17 +15,19 @@ import { QueryProvider } from './lib/query-provider';
   providers: [AutocompleteTypeProvider]
 })
 export class AppComponent {
-  private _colour: Colour = null;
+  private _scrollHeight: number;
+  private _scrollWidth: number;
+  private _colourManager: ColourManager = new ColourManager();
   public openOnFocus = true;
-  public autoAssign = "";
+  public autoAssign = "on";
+  public allowCreate = true;
   public customCreate = false;
   public customList = false;
-  private _colours: Colour[];
-  private _scrollHeight: number;
+  public randomiseTime = false;
+  public queryDelay: number = 2000;
+  public _scroll: boolean = false;
 
-  private _colourManager: ColourManager = new ColourManager();
-
-  constructor(typeProvider: AutocompleteTypeProvider, private ref: ChangeDetectorRef) {
+  constructor(typeProvider: AutocompleteTypeProvider) {
     typeProvider.add("Both", new AutocompleteTypeset(CustomCreate, CustomList));
     typeProvider.add("Create", new AutocompleteTypeset(CustomCreate, null));
     typeProvider.add("List", new AutocompleteTypeset(null, CustomList));
@@ -30,28 +35,56 @@ export class AppComponent {
 
   ngOnInit() {
     window.addEventListener("resize", (e) => {
-      this.setScrollHeight();
+      this.setScrollRegions();
 
     });
 
-    this.setScrollHeight();
+    this.setScrollRegions();
   }
 
-  setScrollHeight() {
-    // console.log("window.innerHeight = " + window.innerHeight);
-    let hHeight = parseInt(window.getComputedStyle(document.getElementById("header")).height);
-    this._scrollHeight = window.innerHeight - hHeight - 65;
-    this.ref.detectChanges();
-    document.getElementById("input-element").scrollIntoView();
-    //document.getElementById("scroll-container").scrollTop -= 10;
+  setScrollRegions() {
+    if (!this.scroll) {
+      this._scrollHeight = null;
+      this._scrollWidth = null;
+    }
+    else {
+      this._scrollHeight = window.innerHeight;
+      this._scrollWidth = window.innerWidth;
+      // this.ref.detectChanges();
+    }
   }
 
   get scrollHeight(): number {
     return this._scrollHeight;
   }
 
+  get scrollWidth(): number {
+    return this._scrollWidth;
+  }  
+
+  get scroll(): boolean {
+    return this._scroll;
+  }
+  set scroll(value: boolean) {
+    if (value == this._scroll) return;
+    this._scroll = value;
+    this.setScrollRegions();
+    if (value) {
+      setTimeout(() => {
+        window.scrollTo(this._scrollWidth, this.scrollHeight);
+      }, 200);
+      // let e = document.getElementById("scroll-container");
+      // e.style.top = this._scrollHeight + "px";
+    }
+  }
+
   get queryFn() {
-    return this._colourManager.queryColoursFn;
+    console.log()
+    return (mediator: AutocompleteQueryMediator) => {
+      mediator.subscribeFn((sender: AutocompleteQueryMediator, token: any, filter: string) => {
+        this.processResult(sender, token, this._colourManager.queryColoursFn(filter));
+      });
+    }
   }
 
   get resolveFn() {
@@ -63,7 +96,10 @@ export class AppComponent {
   }
 
   set colour(value: Colour) {
+    let alert = value !== this._colourManager.colour;
     this._colourManager.colour = value;
+    if (!alert) return;
+    this.logAssignment("Colour", value != null ? { name: value.name, rgb: value.rgb } : null, "The colour \"{name}\" having the RGB value {rgb}");
   }
 
   get typeKey(): string {
@@ -80,7 +116,11 @@ export class AppComponent {
 
   private _city: string = "";
   get queryCitiesFn() {
-    return QueryProvider.queryCitiesFn();
+    return (mediator: AutocompleteQueryMediator) => {
+      mediator.subscribeFn((sender: AutocompleteQueryMediator, token: any, filter: string) => {
+        this.processResult(sender, token, CityQueryProvider.queryCities(filter));
+      });
+    }
   }
 
   get city(): string {
@@ -88,13 +128,20 @@ export class AppComponent {
   }
 
   set city(value: string) {
-    console.log("A city with value \"" + value + "\" was applied");
-  }  
+    let alert = value !== this._city;
+    this._city = value;
+    if (!alert) return;
+    this.logAssignment("City", value);
+  }
 
   private _currency: any = null;
 
   get queryCurrenciesFn() {
-    return QueryProvider.queryCurrenciesFn();
+    return (mediator: AutocompleteQueryMediator) => {
+      mediator.subscribeFn((sender: AutocompleteQueryMediator, token: any, filter: string) => {
+        this.processResult(sender, token, CurrencyQueryProvider.queryCurrencies(filter));
+      });
+    }
   }
 
   get currency(): any {
@@ -104,11 +151,8 @@ export class AppComponent {
   set currency(value: any) {
     let alert = value !== this._currency;
     this._currency = value;
-    if (alert)
-      if (value == null)
-        console.log("A null value was applied");
-    else
-      console.log('The currency "' + value.name + '" having the code "' + value.code + '" was selected');
+    if (!alert) return;
+    this.logAssignment("Currency", value, "The currency \"{name}\" having the code \"{code}\"");
   }
 
   get currencyCode(): string {
@@ -128,7 +172,7 @@ export class AppComponent {
   get resolveCurrencyFunction(): AutocompleteResolveFunction {
     return (data: AutocompleteResolveData) => {
       let v = data.inputValue.toLowerCase();
-      let results = QueryProvider.queryCurrencies(v);
+      let results = CurrencyQueryProvider.queryCurrencies(v);
       if (results.length == 0) return false;
 
       for (let c of results) {
@@ -138,5 +182,21 @@ export class AppComponent {
       }
       return data.resolvedValue != null;
     };
-  }  
+  }
+
+  private processResult(sender: AutocompleteQueryMediator, token: any, data: any[]) {
+    if (!this.randomiseTime)
+      sender.onResult(token, data);
+    else {
+      setTimeout(() => {
+        sender.onResult(token, data);
+      }, Math.random() * this.queryDelay);
+    }
+  }
+
+  private logAssignment(fieldName: string, value: any, message?: string) {
+    if (message == null) message = "The value \"{0}\"";
+    message = value != null ? stringFormat(message, value) : "A null value";
+    console.log(message + stringFormat(" was applied to the \"{0}\" field", fieldName));
+  }
 }
