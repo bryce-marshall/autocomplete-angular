@@ -1,12 +1,13 @@
 {
   "name": "@brycemarshall/autocomplete-angular",
   "version": "1.0.0",
-  "description": "An Angular package that extends the standard HTML input control with auto-complete-type functionality.",
+  "description": "An Angular package that extends the standard HTML INPUT control with auto-complete-type functionality.",
   "repository": {
     "type": "git",
     "url": "https://github.com/bryce-marshall/autocomplete-angular.git"
   },
   "main": "index",
+  "types": "index",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -17,17 +18,21 @@
     "dropdown",
     "textbox",
     "input",
-    "angular"
+    "angular",
+    "google search",
+    "google style"
   ],
   "author": "Bryce Marshall",
   "license": "MIT",
   "dependencies": {
-    "@angular/common": "^4.3.0",
-    "@angular/core": "^4.3.0",
     "@brycemarshall/exception": "^1.0.3",
-    "@brycemarshall/scroll-listener": "^2.1.1",
-    "rxjs": "^5.4.2",
-    "zone.js": "^0.8.13"
+    "@brycemarshall/scroll-listener": "^2.1.1"
+  },
+  "peerDependencies": {
+    "@angular/common": ">=4.0.0",
+    "@angular/core": ">=4.0.0",
+    "rxjs": ">=5.0.0",
+    "zone.js": ">=0.8.0"
   },
   "devDependencies": {}
 }
