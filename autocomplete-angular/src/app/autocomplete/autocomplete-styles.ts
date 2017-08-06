@@ -17,10 +17,12 @@ import { Directive, ElementRef } from '@angular/core';
 export class AutocompleteStyles {
   constructor(ref: ElementRef) {
     let e = ref.nativeElement;
-    e.data = "Base styles for the @brycemarshall/autocomplete-angular component";
-    let n = document.createElement("style");
-    n.innerHTML = AutocompleteStyles.getStyleInnerHTML();
-    e.parentNode.insertBefore(n, e.nextSibling);
+    if (e != null) {
+      e.data = "Base styles for the @brycemarshall/autocomplete-angular component";
+      let n = document.createElement("style");
+      n.innerHTML = AutocompleteStyles.getStyleInnerHTML();
+      e.parentNode.insertBefore(n, e.nextSibling);
+    }
   }
 
   public static getStyleInnerHTML() {
