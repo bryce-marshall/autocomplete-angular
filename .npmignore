@@ -1,3 +1,4 @@
 .vscode
 autocomplete-angular
 tsconfig.json
+build.bat
