@@ -214,7 +214,7 @@ class CoordinatorImp extends AutocompleteCoordinator {
   }
 
   handleLostFocus(src: InputRef) {
-    if (src != this._src)
+    if (src != this._src || !src.closeOnBlur)
       return;
 
     this.enterLostFocusHandler();
@@ -609,6 +609,19 @@ export abstract class AutocompleteBase {
   @Input()
   autoAssignType: AutoAssignMode;
 
+  /**
+   * Specifies whether or not the popup should automatically close when the bound input control loses focus.
+   * The default value is true.
+   * 
+   * 
+   * Remarks:
+   * 
+   * This feature exists primarily as a development and design aid, as it enables inspection of the popup and its associated CSS styles in the live DOM (which is not otherwise possible as it is disposed of when the input control loses focus).
+   * @property closeOnBlur
+   */
+  @Input()
+  closeOnBlur: boolean = true;
+
   /** @internal */
   private _dataItem: any;
   /** @internal */
@@ -627,6 +640,7 @@ export abstract class AutocompleteBase {
       get autoAssign(): AutoAssignMode { return that.autoAssignType; },
       get allowCursor(): boolean { return that.allowCursor; },
       get openOnFocus(): boolean { return that.openOnFocus },
+      get closeOnBlur(): boolean { return that.closeOnBlur },
       get typeKey(): string { return that.typeKey; },
       get queryFunction(): BindQueryProcessorFunction { return that.queryFunction; },
       get textFunction(): AutocompleteTextFunction { return that.textFunction; },
@@ -815,6 +829,7 @@ interface InputRef {
   readonly autoAssign: AutoAssignMode;
   readonly allowCursor: boolean;
   readonly openOnFocus: boolean;
+  readonly closeOnBlur: boolean;
   readonly typeKey: string;
   readonly queryFunction: BindQueryProcessorFunction;
   readonly textFunction: AutocompleteTextFunction;

@@ -1,4 +1,4 @@
-<ng-template autocomplete-styles></ng-template>
+<ng-template autocomp-styles></ng-template>
 <div id="scroll-container" autocomp-container [style.padding-left.px]="scrollWidth"  [style.padding-right.px]="scrollWidth" style="width:100%;">
   <div style="width:100%;">
     <div [style.height.px]="scrollHeight"></div>
@@ -9,7 +9,7 @@
       <div class="row">
         <label input style="display:inline-block;width:60px;">Colour</label>
         <input id="input-element" type="text" [autocomp]="queryFn" [resolveFunction]="resolveFn" [typeKey]="typeKey"
-          [(dataItem)]="colour" [allowCreate]="allowCreate" [openOnFocus]="openOnFocus" [autoAssign]="autoAssign"
+          [(dataItem)]="colour" [allowCreate]="allowCreate" [openOnFocus]="openOnFocus" [autoAssign]="autoAssign" [closeOnBlur]="false"
         />
       </div>
       <div class="row">

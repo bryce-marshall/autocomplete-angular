@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AutocompleteStyles } from './autocomplete-styles';
+import { AutocompleteStyles, AutocompleteStylesBackCompat } from './autocomplete-styles';
 import { Autocomplete, AutocompleteContainer } from './autocomplete';
 import { AutocompletePopup, CreateDirective, ListDirective } from './popup/popup';
 import { CancelIcon } from './cancel-icon/cancel-icon';
@@ -11,6 +11,7 @@ import { CancelIcon } from './cancel-icon/cancel-icon';
 @NgModule({
   declarations: [
     AutocompleteStyles,
+    AutocompleteStylesBackCompat,
     Autocomplete,
     AutocompleteContainer,
     AutocompletePopup, 
@@ -23,7 +24,7 @@ import { CancelIcon } from './cancel-icon/cancel-icon';
     CommonModule,
   ],
   exports: [
-    AutocompleteStyles, AutocompleteContainer, Autocomplete
+    AutocompleteStyles, AutocompleteStylesBackCompat, AutocompleteContainer, Autocomplete
   ]
 })
 export class AutocompleteModule { }
