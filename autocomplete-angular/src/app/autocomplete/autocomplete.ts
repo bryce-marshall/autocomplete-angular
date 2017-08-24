@@ -46,7 +46,7 @@ export class AutocompleteResolveData {
   /**
    * The value of this property will be true if the originating Autocomplete control has its allowCreate property set to true, otherwise it will be false.
    * The property serves as a hint for the implementing resolver function, which should always try to resolve an existing item that can be exactly mapped 
-   * to the input value. If an existing item cannot be resolved, then the implenting function should not create a new one unless this property has a value of true.
+   * to the input value. If an existing item cannot be resolved, then the implementing function should not create a new one unless this property has a value of true.
    * @property shouldCreate
    */
   readonly shouldCreate: boolean;
@@ -108,7 +108,7 @@ class CoordinatorImp extends AutocompleteCoordinator {
   /** @internal */
   private _precursorInput: string = "";
   /** @internal */
-  private _queryInput: string = null;
+  private _cursorOp: CursorOp = null;
   /** @internal */
   private _blurState: BlurHandlerState = BlurHandlerState.Inactive;
 
@@ -157,6 +157,12 @@ class CoordinatorImp extends AutocompleteCoordinator {
 
   get controller(): AutocompleteController {
     return this._controller;
+  }
+
+  get queryProxy(): QueryProxy {
+    if (!this._query)
+      this._query = CoordinatorImp.createQueryProxy(this);
+    return this._query;
   }
 
   get mouseHandler(): MouseEventHandler {
@@ -210,7 +216,7 @@ class CoordinatorImp extends AutocompleteCoordinator {
     this._viewportManager.createPopup(src);
     this._blurState = BlurHandlerState.Active;
     if (src.openOnFocus)
-      this.initQuery();
+      this.queryProxy.onInputChanged();
   }
 
   handleLostFocus(src: InputRef) {
@@ -224,7 +230,7 @@ class CoordinatorImp extends AutocompleteCoordinator {
     if (src !== this._src) return;
 
     this._inputValue = value != null ? value : "";
-    this.initQuery();
+    this.queryProxy.onInputChanged();
   }
 
   handleKeyUp(src: InputRef, event: KeyboardEvent) {
@@ -232,20 +238,18 @@ class CoordinatorImp extends AutocompleteCoordinator {
     switch (event.key) {
       case "ArrowDown":
         if (this._src.allowCursor) {
-          this.ensureCursor();
-          this._viewportManager.incCursor();
+          this.ensureCursor(true);
         }
         else
-          this.ensurePopup();
+          this.queryProxy.onInputChanged();
         break;
 
       case "ArrowUp":
         if (this._src.allowCursor) {
-          this.ensureCursor();
-          this._viewportManager.decCursor();
+          this.ensureCursor(false);
         }
         else
-          this.ensurePopup();
+          this.queryProxy.onInputChanged();
         break;
 
       case "Enter":
@@ -270,18 +274,29 @@ class CoordinatorImp extends AutocompleteCoordinator {
     this._inputValue = value;
   }
 
-  private ensureCursor() {
-    if (this._viewportManager.cursorActive) return;
-    this._precursorInput = this._inputValue;
-    if (this._queryInput != this._inputValue)
-      this.initQuery();
-  }
-
-  private ensurePopup() {
-    if (this._queryInput != this._inputValue)
-      this.initQuery();
-    else
+  private ensureCursor(inc: boolean) {
+    if (this._viewportManager.cursorActive) {
+      this._viewportManager.moveCursor(inc);
+    }
+    else if (this.queryProxy.isActiveFilter(this._inputValue)) {
+      this._precursorInput = this._inputValue;
       this._viewportManager.isActive = true;
+      this._viewportManager.moveCursor(inc);
+    }
+    else if (this._cursorOp == null) {
+      this._precursorInput = this._inputValue;
+      this._cursorOp = {
+        sequence: this.queryProxy.peekNext(), inc: inc
+      };
+
+      this.queryProxy.onInputChanged();
+    }
+    // TODO: TIMEOUT!
+    // TODO: Only ONE cursor query at a time (as they may be handled asynchronously). 
+    // Consider a timeout to allow retries after a period. When timeout occurs, the cursor is reset and the user must press an arrow key again to reinitiate it.
+    // For the lock to be reset, a query result must be returned for a query submitted at or after the lock request, or a timeout must occur.
+    // Have initQuery() return a token, and add a "atOrBeforeCurrent(token)" method to the QueryProxy instance which will return true if the sequence of
+    // the last returned result is >= the sequence of the stored token.
   }
 
   /** @internal */
@@ -319,25 +334,21 @@ class CoordinatorImp extends AutocompleteCoordinator {
     this._initialInputValue = "";
     this._inputValue = "";
     this._precursorInput = "";
-    this._queryInput = null;
     this._viewportManager.destroyPopup(); // Safe to invoke even if there is no existing popup instance
     if (this._query != null) {
       this._query.destroy();
       this._query = null;
     }
-  }
-
-  private initQuery(): void {
-    if (this._query == null) {
-      this._query = CoordinatorImp.createQueryProxy(this);
-    }
-
-    this._query.onInputChanged();
+    this._cursorOp = null;
   }
 
   private handleQueryResponse(src: InputRef, data: any[]) {
     if (src !== this._src) return;
     this._viewportManager.updatePopup(data);
+    if (this._cursorOp != null && this.queryProxy.isCurrent(this._cursorOp.sequence)) {
+      this._viewportManager.moveCursor(this._cursorOp.inc);
+      this._cursorOp = null;
+    }
   }
 
   private static createQueryProxy(c: CoordinatorImp): QueryProxy {
@@ -350,6 +361,7 @@ class CoordinatorImp extends AutocompleteCoordinator {
     let context: any = {};
     let activeSequence: number = 0;
     let sequence: number = 0;
+    let activeFilter: string = null;
 
     let m: AutocompleteQueryMediator = {
       get isDestroyed() { return c == null; },
@@ -371,11 +383,13 @@ class CoordinatorImp extends AutocompleteCoordinator {
         if ((<QueryToken>token).context !== context || typeof ((<QueryToken>token).sequence) != "number") return;
         if ((<QueryToken>token).sequence <= activeSequence) return;
         activeSequence = token.sequence;
+        activeFilter = token.filter;
+        if (activeFilter == null) activeFilter = "";
         c.handleQueryResponse(src, data);
       }
     };
 
-    src.queryFunction(m);
+    src.bindQueryFunction(m);
 
     return {
       get mediator(): AutocompleteQueryMediator {
@@ -385,11 +399,25 @@ class CoordinatorImp extends AutocompleteCoordinator {
         if (p == null) throw ExceptionFactory.InvalidOperation(notSubscribedMsg);
         return p;
       },
-      onInputChanged() {
+      isCurrent(sequence: number): boolean {
+        return sequence === activeSequence;
+      },
+      peekNext(): number {
+        return sequence + 1;
+      },
+      isActiveFilter(value: string): boolean {
+        return value === activeFilter;
+      },
+      onInputChanged(): void {
         if (p == null) throw ExceptionFactory.InvalidOperation(notSubscribedMsg);
-        p.onInputChanged(m,
-          ClosureFactory.createQueryToken(context, ++sequence),
-          c._inputValue);
+        if (c._inputValue != activeFilter) {
+          p.onInputChanged(m,
+            ClosureFactory.createQueryToken(context, ++sequence, c.inputValue),
+            c._inputValue);
+        }
+        else if (activeSequence != sequence) {
+          activeSequence = ++sequence;
+        }
       },
       destroy() {
         src = null;
@@ -459,10 +487,8 @@ class CoordinatorImp extends AutocompleteCoordinator {
     this._initialInputValue = value;
     this._precursorInput = value;
 
-    if (this._queryInput != value) {
-      this._queryInput = null;
+    if (this._query && !this._query.isActiveFilter(value))
       this._viewportManager.updatePopup(null);
-    }
   }
 
   /** @internal */
@@ -642,7 +668,7 @@ export abstract class AutocompleteBase {
       get openOnFocus(): boolean { return that.openOnFocus },
       get closeOnBlur(): boolean { return that.closeOnBlur },
       get typeKey(): string { return that.typeKey; },
-      get queryFunction(): BindQueryProcessorFunction { return that.queryFunction; },
+      get bindQueryFunction(): BindQueryProcessorFunction { return that.queryFunction; },
       get textFunction(): AutocompleteTextFunction { return that.textFunction; },
       get resolveFunction(): AutocompleteResolveFunction { return that.resolveFunction; },
       get hostElement(): HTMLElement { return inputEl.nativeElement; },
@@ -801,9 +827,18 @@ export class Autocomplete extends AutocompleteBase {
 }
 
 /** @internal */
+interface CursorOp {
+  readonly sequence: number;
+  readonly inc: boolean;
+}
+
+/** @internal */
 interface QueryProxy {
   readonly mediator: AutocompleteQueryMediator;
   readonly processor: AutocompleteQueryProcessor;
+  isCurrent(sequence: number): boolean;
+  peekNext(): number;
+  isActiveFilter(value: string): boolean;
   onInputChanged();
   destroy();
 }
@@ -831,7 +866,7 @@ interface InputRef {
   readonly openOnFocus: boolean;
   readonly closeOnBlur: boolean;
   readonly typeKey: string;
-  readonly queryFunction: BindQueryProcessorFunction;
+  readonly bindQueryFunction: BindQueryProcessorFunction;
   readonly textFunction: AutocompleteTextFunction;
   readonly resolveFunction: AutocompleteResolveFunction;
   readonly hostElement: HTMLElement;
@@ -848,6 +883,7 @@ interface InputRef {
 interface QueryToken {
   readonly context: any;
   readonly sequence: number;
+  readonly filter: string;
 }
 
 /** @internal */
@@ -1028,7 +1064,6 @@ class ViewportManager {
     this.isActive = (items && items.length > 0) || val.length > 0 && this._coordinator.hasChanges;
     if (!this.isActive) return;
 
-
     let comp = this.popupComp.instance;
     comp.showInput = this.computeShowInput();
     comp.input = val;
@@ -1057,7 +1092,11 @@ class ViewportManager {
     }
   }
 
-  public incCursor() {
+  public moveCursor(inc: boolean) {
+    if (inc) this.incCursor(); else this.decCursor();
+  }
+
+  private incCursor() {
     if (this._items == null || this._items.length == 0)
       return;
 
@@ -1068,7 +1107,7 @@ class ViewportManager {
     this.applyCursor();
   }
 
-  public decCursor() {
+  private decCursor() {
     if (this._items == null || this._items.length == 0)
       return;
 
@@ -1422,10 +1461,13 @@ class TextDirectionHelper {
 }
 
 class ClosureFactory {
-  static createQueryToken(context: any, sequence: number): QueryToken {
+  static createQueryToken(context: any, sequence: number, filter: string): QueryToken {
     return {
       get context(): any { return context; },
-      get sequence(): number { return sequence; }
+      get sequence(): number { return sequence; },
+      get filter(): string {
+        return filter;
+      }
     }
   }
 }

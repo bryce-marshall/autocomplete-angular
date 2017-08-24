@@ -1,10 +1,10 @@
 import { Directive, ElementRef } from '@angular/core';
 
 /**
- * The AutocompleteStyles directive should be applied to an ng-template element (using the autocomplete-styles selector) immediately below the root application component to declare the default styles for the autocomplete component.
+ * The AutocompleteStyles directive should be applied to an ng-template element (using the autocomp-styles selector) immediately below the root application component to declare the default styles for the autocomplete component.
  * 
  * 
- * Example usage: <ng-template autocomplete-styles></ng-template>
+ * Example usage: <ng-template autocomp-styles></ng-template>
  * 
  *  
  * The styles are applied in this manner so as to allow them to be easily overriden at application, page, or sub-component level
