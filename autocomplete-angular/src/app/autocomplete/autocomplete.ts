@@ -233,6 +233,11 @@ class CoordinatorImp extends AutocompleteCoordinator {
     this.queryProxy.onInputChanged();
   }
 
+  handleKeyDown(src: InputRef, event: KeyboardEvent) {
+    if (src !== this._src || event.key != "Escape") return;
+    if (this._viewportManager.cursorActive || this._viewportManager.isActive || this.hasChanges) event.cancelBubble = true;
+  }
+
   handleKeyUp(src: InputRef, event: KeyboardEvent) {
     if (src !== this._src) return;
     switch (event.key) {
@@ -258,13 +263,20 @@ class CoordinatorImp extends AutocompleteCoordinator {
 
       case "Escape":
         if (this._viewportManager.cursorActive) {
+          event.cancelBubble = true;
           this._viewportManager.resetCursor();
           this._inputValue = this._precursorInput;
           this._precursorInput = "";
           this._src.setControlValue(this._inputValue);
         }
-        else
+        else if (this._viewportManager.isActive){
+          event.cancelBubble = true;
+          this._viewportManager.isActive = false;
+        }
+        else if (this.hasChanges) {
+          event.cancelBubble = true;
           this.cancelEdit();
+        }
         break;
     }
   }
@@ -714,6 +726,7 @@ export abstract class AutocompleteBase {
     this._dataItem = value;
     this._coordinator.onDataItemSet(value);
     this.dataItemChange.emit(value);
+    this.onAfterSetDataItem();
   }
 
   /**
@@ -739,6 +752,10 @@ export abstract class AutocompleteBase {
       result = dataItem.toString();
 
     return result != null ? result : "";
+  }
+
+  protected handleKeyDownEvent(src: HTMLInputElement, event: KeyboardEvent) {
+    this._coordinator.handleKeyDown(this._inputRef, event);
   }
 
   protected handleKeyUpEvent(src: HTMLInputElement, event: KeyboardEvent) {
@@ -769,6 +786,10 @@ export abstract class AutocompleteBase {
    * @param value The textual value to assign to the native input control.
    */
   protected abstract setControlValue(value: string);
+  /**
+   * Invoked after the dataItem property has been set.
+   */
+  protected abstract onAfterSetDataItem();
   protected abstract addEventListener(type: string, listener: EventListenerOrEventListenerObject, useCapture?: boolean): void;
   protected abstract removeEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void;
 }
@@ -791,6 +812,8 @@ export class Autocomplete extends AutocompleteBase {
       this.inputEl.nativeElement.value = value;
   }
 
+  protected onAfterSetDataItem(){}
+
   protected addEventListener(type: string, listener: EventListenerOrEventListenerObject, useCapture?: boolean): void {
     if (this.inputEl.nativeElement)
       this.inputEl.nativeElement.addEventListener(type, listener, useCapture);
@@ -799,6 +822,12 @@ export class Autocomplete extends AutocompleteBase {
   protected removeEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void {
     if (this.inputEl.nativeElement)
       this.inputEl.nativeElement.removeEventListener(type, listener, useCapture);
+  }
+
+  /** @internal */
+  @HostListener('keydown', ['$event'])
+  private onKeyDown(event: KeyboardEvent) {
+    this.handleKeyDownEvent(<HTMLInputElement>event.target, event);
   }
 
   /** @internal */

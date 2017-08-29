@@ -201,6 +201,7 @@ export declare abstract class AutocompleteBase {
      * Where applicable, descriptive text is displayed in list of suggested items, whereas simple text is displayed in the input control.
      */
     getDisplayText(dataItem: any, descriptive: boolean): string;
+    protected handleKeyDownEvent(src: HTMLInputElement, event: KeyboardEvent): void;
     protected handleKeyUpEvent(src: HTMLInputElement, event: KeyboardEvent): void;
     protected handleInputEvent(src: HTMLInputElement, event: Event): void;
     protected handleFocusEvent(src: HTMLInputElement, event: FocusEvent): void;
@@ -217,6 +218,10 @@ export declare abstract class AutocompleteBase {
      * @param value The textual value to assign to the native input control.
      */
     protected abstract setControlValue(value: string): any;
+    /**
+     * Invoked after the dataItem property has been set.
+     */
+    protected abstract onAfterSetDataItem(): any;
     protected abstract addEventListener(type: string, listener: EventListenerOrEventListenerObject, useCapture?: boolean): void;
     protected abstract removeEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void;
 }
@@ -228,8 +233,11 @@ export declare class Autocomplete extends AutocompleteBase {
     private inputEl;
     constructor(coordinator: AutocompleteCoordinator, typeProvider: AutocompleteTypeProvider, inputEl: ElementRef, changeDetectorRef: ChangeDetectorRef);
     protected setControlValue(value: string): void;
+    protected onAfterSetDataItem(): void;
     protected addEventListener(type: string, listener: EventListenerOrEventListenerObject, useCapture?: boolean): void;
     protected removeEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void;
+    /** @internal */
+    private onKeyDown(event);
     /** @internal */
     private onKeyUp(event);
     /** @internal */

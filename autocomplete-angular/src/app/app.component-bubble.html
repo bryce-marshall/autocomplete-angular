@@ -1,0 +1,23 @@
+<ng-template autocomp-styles></ng-template>
+<div autocomp-container style="width:100%;">
+  <div style="width:100%;">
+    <div id="control-body">
+      <h1>
+        Autocomplete-Angular Bubble Demo
+      </h1>
+      <div class="row" (keydown)="onKeyboardEvent('keydown', $event);" (keypress)="onKeyboardEvent('keypress', $event);" (keyup)="onKeyboardEvent('keyup', $event);">
+        <label input style="display:inline-block;width:60px;">City</label>
+        <input type="text" [(dataItem)]="city" [autocomp]="bindCitiesQueryProc" [allowCreate]="false" />
+      </div>
+      <div class="row">
+        <p>This example tests the suppression of keyboard event bubbling when the escape key is pressed to cancel a cursor selection, close the popup, or to cancel an edit.</p>
+      </div>
+      <div class="row">
+        <p>Keyboard inputs:</p>
+        <p><b>Escape:</b> Cancel auto-suggested input, close popup.</p>
+        <p><b>Arrow Up/Arrow Down:</b> Navigate popup items / open popup.</p>
+        <p><b>Enter:</b> Apply current input.</p>
+      </div>
+    </div>
+  </div>
+</div>

@@ -8,6 +8,7 @@ import { AppComponentCities } from './app.component-cities';
 import { AppComponentColours } from './app.component-colours';
 import { AppComponentCustom } from './app.component-custom';
 import { AppComponentAsync } from './app.component-async';
+import { AppComponentBubble } from './app.component-bubble';
 import { TestCompModule } from './test-comp/test-comp.module';
 import { AutocompleteModule } from './autocomplete/autocomplete.module';
 import { CustomAutocompleteModule } from './custom-autocomplete/custom-autocomplete.module';
@@ -19,7 +20,8 @@ import { CustomAutocompleteModule } from './custom-autocomplete/custom-autocompl
     AppComponentCities,
     AppComponentColours,
     AppComponentCustom,
-    AppComponentAsync
+    AppComponentAsync,
+    AppComponentBubble
   ],
   imports: [
     BrowserModule,
@@ -31,9 +33,10 @@ import { CustomAutocompleteModule } from './custom-autocomplete/custom-autocompl
   ],
   providers: [],
   // bootstrap: [AppComponent]
-  bootstrap: [AppComponentCities]
+  // bootstrap: [AppComponentCities]
   //bootstrap: [AppComponentColours]
   // bootstrap: [AppComponentCustom]
-  // bootstrap: [AppComponentAsync]
+  bootstrap: [AppComponentAsync]
+  // bootstrap: [AppComponentBubble]
 })
 export class AppModule { }
