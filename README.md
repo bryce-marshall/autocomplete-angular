@@ -216,8 +216,10 @@ export declare abstract class AutocompleteBase {
      * This happens because the model is bound to the dataItem property and not the HTMLInput control itself.
      * @method setControlValue
      * @param value The textual value to assign to the native input control.
+     * @param persistent An optional parameter which indiciates whether or not the value should be treated as input (and potentially bubbled-up to an encapsulating control).
+     * The persistent parameter will have a value of false if the setControlValue invocation was made from within a cursor navigation context, otherwise it will have a value of true.
      */
-    protected abstract setControlValue(value: string): any;
+    protected abstract setControlValue(value: string, persistent?: boolean): any;
     /**
      * Invoked after the dataItem property has been set.
      */

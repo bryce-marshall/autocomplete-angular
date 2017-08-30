@@ -1,3 +1,7 @@
+# 1.0.4
+## Added persistent parameter to AutocompleteBase.setControlValue abstract method
+Allows subclasses to prevent non-persistent values (in this case those set as a consequence of cursor navigation) from being passed-up to encapsulating types.
+Necessary for the cursor function to work correctly on the Ionic implementation.
 # 1.0.3
 ## Suppress Escape Keyboard Events
 Suppress bubbling of the keyup and keydown events when the escape key is a pressed to:

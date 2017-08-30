@@ -267,7 +267,7 @@ class CoordinatorImp extends AutocompleteCoordinator {
           this._viewportManager.resetCursor();
           this._inputValue = this._precursorInput;
           this._precursorInput = "";
-          this._src.setControlValue(this._inputValue);
+          this._src.setControlValue(this._inputValue, true);
         }
         else if (this._viewportManager.isActive){
           event.cancelBubble = true;
@@ -282,7 +282,7 @@ class CoordinatorImp extends AutocompleteCoordinator {
   }
 
   public setCursorValue(value: string) {
-    this._src.setControlValue(value);
+    this._src.setControlValue(value, false);
     this._inputValue = value;
   }
 
@@ -317,7 +317,7 @@ class CoordinatorImp extends AutocompleteCoordinator {
     this._precursorInput = "";
     this._inputValue = this._initialInputValue;
     this._viewportManager.isActive = false;
-    this._src.setControlValue(this._inputValue);
+    this._src.setControlValue(this._inputValue, true);
   }
 
   /** @internal */
@@ -697,8 +697,8 @@ export abstract class AutocompleteBase {
       },
       // detectChanges() { changeDetectorRef.detectChanges(); },
       getDisplayText(dataItem: any, descriptive: boolean): string { return that.getDisplayText(dataItem, descriptive); },
-      setControlValue(value: string) {
-        that.setControlValue(value);
+      setControlValue(value: string, persistent: boolean) {
+        that.setControlValue(value, persistent);
       },
       addEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void { that.addEventListener(type, listener, useCapture); },
       removeEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void { that.removeEventListener(type, listener, useCapture); },
@@ -720,7 +720,7 @@ export abstract class AutocompleteBase {
   set dataItem(value: any) {
     if (value === this.dataItem) {
       // It may be necessary to reassign the text value to the control, however angular doesn't allow a forced refresh therefore it must be done through the DOM.
-      this.setControlValue(this.getDisplayText(value, false))
+      this.setControlValue(this.getDisplayText(value, false), true)
       return;
     }
     this._dataItem = value;
@@ -784,8 +784,10 @@ export abstract class AutocompleteBase {
    * This happens because the model is bound to the dataItem property and not the HTMLInput control itself.
    * @method setControlValue
    * @param value The textual value to assign to the native input control.
+   * @param persistent An optional parameter which indiciates whether or not the value should be treated as input (and potentially bubbled-up to an encapsulating control).
+   * The persistent parameter will have a value of false if the setControlValue invocation was made from within a cursor navigation context, otherwise it will have a value of true.
    */
-  protected abstract setControlValue(value: string);
+  protected abstract setControlValue(value: string, persistent?: boolean);
   /**
    * Invoked after the dataItem property has been set.
    */
@@ -902,7 +904,7 @@ interface InputRef {
   dataItem: any;
   getTypeset(): AutocompleteTypeset;
   getDisplayText(dataItem: any, descriptive: boolean): string;
-  setControlValue(value: string): void;
+  setControlValue(value: string, persistent: boolean): void;
   addEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void;
   removeEventListener(type: string, listener?: EventListenerOrEventListenerObject, useCapture?: boolean): void;
   onAfterDestroyPopup();
