@@ -228,8 +228,10 @@ class CoordinatorImp extends AutocompleteCoordinator {
 
   handleInputChanged(src: InputRef, value: string) {
     if (src !== this._src) return;
+    if (value == null) value = "";
+    if (value == this._inputValue) return;
 
-    this._inputValue = value != null ? value : "";
+    this._inputValue = value;
     this.queryProxy.onInputChanged();
   }
 
@@ -269,7 +271,7 @@ class CoordinatorImp extends AutocompleteCoordinator {
           this._precursorInput = "";
           this._src.setControlValue(this._inputValue, true);
         }
-        else if (this._viewportManager.isActive){
+        else if (this._viewportManager.isActive) {
           event.cancelBubble = true;
           this._viewportManager.isActive = false;
         }
@@ -281,7 +283,22 @@ class CoordinatorImp extends AutocompleteCoordinator {
     }
   }
 
-  public setCursorValue(value: string) {
+  moveCaretEnd(src: InputRef) {
+    if (!window || src !== this._src) return;
+    let h = src.hostElement;
+    if (h == null) return;
+
+    let fn = () => {
+      h.selectionStart = h.selectionEnd = h.value.length;
+    }
+
+    if (typeof (window.setImmediate) == "function")
+       window.setImmediate(fn);
+    else if (typeof (window.setTimeout) == "function")
+      window.setTimeout(fn, 1);
+  }
+
+  setCursorValue(value: string) {
     this._src.setControlValue(value, false);
     this._inputValue = value;
   }
@@ -303,12 +320,6 @@ class CoordinatorImp extends AutocompleteCoordinator {
 
       this.queryProxy.onInputChanged();
     }
-    // TODO: TIMEOUT!
-    // TODO: Only ONE cursor query at a time (as they may be handled asynchronously). 
-    // Consider a timeout to allow retries after a period. When timeout occurs, the cursor is reset and the user must press an arrow key again to reinitiate it.
-    // For the lock to be reset, a query result must be returned for a query submitted at or after the lock request, or a timeout must occur.
-    // Have initQuery() return a token, and add a "atOrBeforeCurrent(token)" method to the QueryProxy instance which will return true if the sequence of
-    // the last returned result is >= the sequence of the stored token.
   }
 
   /** @internal */
@@ -683,7 +694,7 @@ export abstract class AutocompleteBase {
       get bindQueryFunction(): BindQueryProcessorFunction { return that.queryFunction; },
       get textFunction(): AutocompleteTextFunction { return that.textFunction; },
       get resolveFunction(): AutocompleteResolveFunction { return that.resolveFunction; },
-      get hostElement(): HTMLElement { return inputEl.nativeElement; },
+      get hostElement(): HTMLInputElement { return inputEl.nativeElement; },
       get dataItem(): any { return that.dataItem; },
       set dataItem(value: any) { that.dataItem = value; },
       getTypeset() {
@@ -720,12 +731,14 @@ export abstract class AutocompleteBase {
   set dataItem(value: any) {
     if (value === this.dataItem) {
       // It may be necessary to reassign the text value to the control, however angular doesn't allow a forced refresh therefore it must be done through the DOM.
-      this.setControlValue(this.getDisplayText(value, false), true)
+      this.setControlValue(this.getDisplayText(value, false), true);
+      this._coordinator.moveCaretEnd(this._inputRef);
       return;
     }
     this._dataItem = value;
     this._coordinator.onDataItemSet(value);
     this.dataItemChange.emit(value);
+    this._coordinator.moveCaretEnd(this._inputRef);
     this.onAfterSetDataItem();
   }
 
@@ -814,7 +827,7 @@ export class Autocomplete extends AutocompleteBase {
       this.inputEl.nativeElement.value = value;
   }
 
-  protected onAfterSetDataItem(){}
+  protected onAfterSetDataItem() { }
 
   protected addEventListener(type: string, listener: EventListenerOrEventListenerObject, useCapture?: boolean): void {
     if (this.inputEl.nativeElement)
@@ -900,7 +913,7 @@ interface InputRef {
   readonly bindQueryFunction: BindQueryProcessorFunction;
   readonly textFunction: AutocompleteTextFunction;
   readonly resolveFunction: AutocompleteResolveFunction;
-  readonly hostElement: HTMLElement;
+  readonly hostElement: HTMLInputElement;
   dataItem: any;
   getTypeset(): AutocompleteTypeset;
   getDisplayText(dataItem: any, descriptive: boolean): string;
