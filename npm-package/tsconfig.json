@@ -15,7 +15,7 @@
     ]
   },
   "include": [
-    "./autocomplete-angular/src/app/autocomplete"
+    "../autocomplete-angular/src/app/autocomplete"
   ],
   "exclude": [
     ".vscode"
